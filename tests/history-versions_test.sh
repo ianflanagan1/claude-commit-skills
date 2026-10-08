@@ -1,5 +1,5 @@
 #!/bin/sh
-# Behaviour of skills/commit/scripts/history-versions.sh. Run with tests/run.sh.
+# Behaviour of shared/scripts/history-versions.sh. Run with tests/run.sh.
 
 # shellcheck source=tests/helpers.sh
 . "$(dirname "$0")/helpers.sh"

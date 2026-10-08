@@ -1,5 +1,5 @@
 #!/bin/sh
-# Behaviour of skills/commit/scripts/stage-lines.sh. Run with tests/run.sh.
+# Behaviour of shared/scripts/stage-lines.sh. Run with tests/run.sh.
 
 # shellcheck source=tests/helpers.sh
 . "$(dirname "$0")/helpers.sh"

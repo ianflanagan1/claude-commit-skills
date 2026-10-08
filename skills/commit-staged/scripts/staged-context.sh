@@ -1,1 +1,1 @@
-../../commit-message/scripts/staged-context.sh
+../../../shared/scripts/staged-context.sh

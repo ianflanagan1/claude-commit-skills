@@ -5,10 +5,10 @@
 # XDG_CONFIG_HOME pointed inside the test's temporary directory, so no real history is read.
 
 root=$(cd "$(dirname "$0")/.." && pwd)
-stage_lines=$root/skills/commit/scripts/stage-lines.sh
+stage_lines=$root/shared/scripts/stage-lines.sh
 worktree_context=$root/skills/commit/scripts/worktree-context.sh
-history_versions=$root/skills/commit/scripts/history-versions.sh
-staged_context=$root/skills/commit-message/scripts/staged-context.sh
+history_versions=$root/shared/scripts/history-versions.sh
+staged_context=$root/shared/scripts/staged-context.sh
 
 setUp() {
     sandbox=$(mktemp -d "${SHUNIT_TMPDIR:-${TMPDIR:-/tmp}}/test.XXXXXX")

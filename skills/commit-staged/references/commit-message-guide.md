@@ -1,1 +1,1 @@
-../../commit-message/references/commit-message-guide.md
+../../../shared/references/commit-message-guide.md

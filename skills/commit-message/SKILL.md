@@ -8,6 +8,8 @@ disable-model-invocation: true
 
 Write one commit message for what is staged **now**, not for unstaged edits, earlier conversation or what you meant to change.
 
+If a `cat` command below still shows instead of a file's contents, read that file in `references/` next to this file before going on.
+
 ## Gather
 
 Any text after the skill's name is a note from the user about this change, such as a ticket or a reason the diff doesn't show. Use it, but it doesn't override anything below.
@@ -24,13 +26,7 @@ If the block above still shows the command rather than its output, run `sh <dire
 - Exit 2: reply `⚠️ ` followed by its error, and stop.
 - Truncated diff: run `git diff --cached -- <path>` for files you need to understand. Don't read unstaged or unrelated files.
 
-## Message
-
-Write the message by this guide:
-
 !`cat "${CLAUDE_SKILL_DIR}/references/commit-message-guide.md"`
-
-If the line above still shows the command, read `references/commit-message-guide.md` next to this file before writing.
 
 ## Output
 

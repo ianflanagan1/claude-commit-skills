@@ -8,7 +8,7 @@ Asking an agent to "write a commit message" usually gets a message for the whole
 
 ## What it does
 
-1. Runs `skills/commit-message/scripts/staged-context.sh`, which prints recent commit subjects, the staged file list and the staged diff. In Claude Code the script runs as the skill loads and its output goes straight into the prompt, so an empty index gets `➖ Nothing staged.` without any tool calls. Agents without that feature run the script themselves.
+1. Runs `shared/scripts/staged-context.sh`, which prints recent commit subjects, the staged file list and the staged diff. In Claude Code the script runs as the skill loads and its output goes straight into the prompt, so an empty index gets `➖ Nothing staged.` without any tool calls. Agents without that feature run the script themselves.
 2. Matches the style of recent commits: Conventional Commits, ticket prefixes, component tags, subject length. With no clear pattern, it uses an imperative subject of 50 characters or fewer and a body wrapped at 72 only when needed. The first commit in a repo is always `Initialise`.
 3. Replies with the message in a single code block. No explanation, no alternatives, no trailers the repo doesn't already use. It never commits.
 
@@ -34,7 +34,7 @@ The skills are meant to be run bare. Text typed after the name is treated as a n
 /commit
 ```
 
-It builds every commit in the index and never touches the working tree, using two scripts in `skills/commit/scripts/`:
+It builds every commit in the index and never touches the working tree, using two scripts in `shared/scripts/`:
 - `stage-lines.sh <path> [ids]` lists a file's changed lines with numbers, or stages only the numbered lines given, down to single lines within a hunk. With `-f <file>` it stages from another copy of the file, such as an earlier version.
 - `history-versions.sh <path>` lists the earlier versions of a file saved since its last commit by Claude Code checkpoints and VS Code's local history. Staging one of them first lets a line changed twice go in at its earlier version. Both stores are undocumented, so this is best-effort.
 
@@ -57,19 +57,33 @@ Without devbox, install shunit2 (`brew install shunit2`, `apt install shunit2`) 
 
 These skills don't report their own problems. If you use [`/improve-skill`](https://github.com/ianflanagan1/improve-skill), a rule in your global `CLAUDE.md` has Claude log problems with any skill, these included, for it to fix.
 
-## Shared message guide
+## Approaches
 
-All three skills write messages by `skills/commit-message/references/commit-message-guide.md`, which is inlined into each skill when it loads. Edit that one file to change how messages are written.
+Each skill follows one approach to deciding what goes in a commit:
 
-`skills/commit-staged/` and `skills/commit/` reach the guide, and `commit-staged` reaches `staged-context.sh`, through symlinks into `skills/commit-message/`. When vendoring them, copy with `cp -RL` so the links become real files.
+| Approach | Skills | Rule |
+|---|---|---|
+| Agnostic | `commit-message`, `commit-staged` | The user chose what goes in the commit; only the message is written. |
+| Atomic | `commit` | Every commit holds one reason to change and leaves the project building and working, so it can be reverted, cherry-picked or bisected on its own. |
+
+## Shared files
+
+Rules and scripts the skills share live once in `shared/`, and each skill links to the files it uses from its own `references/` and `scripts/` folders. Every `references/*.md` file is inlined into the skill when it loads:
+
+- `commit-message-guide.md`: how messages are written (every skill)
+- `commit-safety.md`: how to run `git commit`, and never skipping hooks (every skill that commits)
+- `staging.md`: building commits in the index without touching the working tree, and handling hook rejections (`commit`)
+- `atomic-commits.md`: the atomic approach: grouping, ordering and checking each commit (`commit`)
+
+The links make a skill's approach visible in its folder, and `tests/skills_test.sh` fails if a skill inlines the files of the wrong approach. When vendoring a skill, copy it with `cp -RL` so the links become real files.
 
 ## Script
 
 `staged-context.sh` is POSIX `sh` and works without an agent.
 
 ```sh
-sh path/to/staged-context.sh          # print context for the staged changes
-sh path/to/staged-context.sh -n 500   # truncate the diff after 500 lines (default 2000)
+sh shared/scripts/staged-context.sh          # print context for the staged changes
+sh shared/scripts/staged-context.sh -n 500   # truncate the diff after 500 lines (default 2000)
 ```
 
 Lockfiles and minified files are listed with their change counts but left out of the diff. It exits with 0 when it prints staged changes, 1 when nothing is staged, and 2 on a usage error or outside a git work tree.
@@ -89,4 +103,4 @@ You can vendor them instead, so collaborators get them with the repo: `cp -RL sk
 
 ## Other agents
 
-`skills/commit-message/SKILL.md` uses the [Agent Skills](https://agentskills.io) format, so other agents that support skills can load it. Copy `skills/commit-message/` into your agent's skills directory and keep the folder intact, so `scripts/staged-context.sh` stays alongside `SKILL.md`. Slash-command arguments may behave differently, so just ask in plain language, for example "suggest a commit message for what's staged".
+`skills/commit-message/SKILL.md` uses the [Agent Skills](https://agentskills.io) format, so other agents that support skills can load it. Copy it with `cp -RL skills/commit-message <your agent's skills directory>/` so the linked files become real files alongside `SKILL.md`. Slash-command arguments may behave differently, so just ask in plain language, for example "suggest a commit message for what's staged".
