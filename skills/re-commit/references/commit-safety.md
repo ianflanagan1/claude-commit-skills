@@ -1,0 +1,1 @@
+../../../shared/references/commit-safety.md

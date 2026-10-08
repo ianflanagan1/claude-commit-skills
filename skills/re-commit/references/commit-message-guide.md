@@ -1,0 +1,1 @@
+../../../shared/references/commit-message-guide.md

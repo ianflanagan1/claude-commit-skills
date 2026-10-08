@@ -2,8 +2,9 @@
 # Structure of skills/: the shared files each skill inlines and links. Run with tests/run.sh.
 #
 # The shared references a skill inlines fix its approach to splitting work into commits:
-#   agnostic   the user chose what goes in the commit   commit-message, commit-staged
-#   atomic     atomic-commits.md                        commit
+#   agnostic        the user chose what goes in the commit   commit-message, commit-staged
+#   atomic          atomic-commits.md                        commit, re-commit
+#   review-ordered  its own Approach section                 re-commit-for-squash
 
 # shellcheck source=tests/helpers.sh
 . "$(dirname "$0")/helpers.sh"
@@ -29,8 +30,21 @@ test_agnostic_skills_inline_no_approach() {
 }
 
 test_atomic_skills_inline_the_atomic_commit_rules() {
-    assertEquals 'commit' "$(skills_inlining atomic-commits.md)"
+    assertEquals 'commit re-commit' "$(skills_inlining atomic-commits.md)"
     assertEquals 'atomic-commits.md commit-message-guide.md commit-safety.md staging.md' "$(inlined commit)"
+    assertEquals 'atomic-commits.md commit-message-guide.md commit-safety.md rework.md staging.md' "$(inlined re-commit)"
+}
+
+test_the_review_ordered_skill_states_its_own_approach() {
+    assertEquals 'commit-message-guide.md commit-safety.md rework.md staging.md' "$(inlined re-commit-for-squash)"
+    assertContains "$(cat "$root/skills/re-commit-for-squash/SKILL.md")" '## Approach: review-ordered commits'
+}
+
+test_no_skill_has_more_than_one_approach() {
+    for skill in "$root"/skills/*/; do
+        n=$(cat "$skill/SKILL.md" "$skill"/references/*.md | grep -c '^## Approach: ')
+        assertTrue "$(basename "$skill") has $n approaches" "[ $n -le 1 ]"
+    done
 }
 
 test_every_inlined_reference_and_script_exists_in_the_skill() {

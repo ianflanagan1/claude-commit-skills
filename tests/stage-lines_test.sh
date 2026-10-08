@@ -217,5 +217,42 @@ test_another_version_that_does_not_exist_exits_2() {
     assertEquals 2 "$(exit_status sh "$stage_lines" -f "$sandbox/none" f all)"
 }
 
+# --- A version from a commit (-r)
+
+test_a_version_from_a_commit_can_be_staged() {
+    lines a B1 c >f && commit_all one
+    one=$(git rev-parse HEAD)
+    lines a B2 c >f && commit_all two
+    git reset -q HEAD~2
+    sh "$stage_lines" -r "$one" f all >/dev/null
+    assertEquals 'a B1 c' "$(in_index f)"
+    assertEquals 'a B2 c' "$(tr '\n' ' ' <f | sed 's/ $//')"
+}
+
+test_a_file_missing_from_the_commit_is_staged_as_a_deletion() {
+    git rm -q f && commit_all gone
+    gone=$(git rev-parse HEAD)
+    git reset -q HEAD~1
+    sh "$stage_lines" -r "$gone" f all >/dev/null
+    assertEquals '' "$(git ls-files f)"
+}
+
+test_a_new_file_from_a_commit_keeps_its_executable_mode() {
+    lines a >x.sh && chmod 755 x.sh && commit_all x
+    x=$(git rev-parse HEAD)
+    git reset -q HEAD~1
+    sh "$stage_lines" -r "$x" x.sh all >/dev/null
+    assertEquals 100755 "$(git ls-files -s x.sh | cut -c1-6)"
+}
+
+test_a_rev_that_is_not_a_commit_exits_2() {
+    assertEquals 2 "$(exit_status sh "$stage_lines" -r nope f all)"
+}
+
+test_a_file_and_a_rev_together_exit_2() {
+    lines a >"$sandbox/snap"
+    assertEquals 2 "$(exit_status sh "$stage_lines" -f "$sandbox/snap" -r HEAD f all)"
+}
+
 # shellcheck disable=SC1090
 . "$(shunit2_path)"

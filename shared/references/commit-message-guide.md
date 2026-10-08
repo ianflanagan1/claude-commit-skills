@@ -14,7 +14,7 @@ Pick the scope and type the repo actually uses. If there are fewer than about fi
 ## Message content
 
 - Describe the change as a whole. Name the behaviour, not the file list.
-- State why only when the diff, the code comments or the user's note show it. Never invent a reason, a ticket number or a test result.
+- State why only when the diff, the code comments, the user's note or the messages of commits being reworked show it. Never invent a reason, a ticket number or a test result.
 - Mention breaking changes, removals and migrations; use the repo's convention for them (`!`, `BREAKING CHANGE:` footer) if it has one.
 - Unrelated changes in one commit: still write one message that covers them, subject on the main change, the rest as body bullets.
 - First commit (the repo has no commits yet): the message is exactly `Initialise`, with no body, whatever it adds.

@@ -7,9 +7,10 @@
 # valid until the file's index entry changes. Unselected '+' lines are dropped and unselected
 # '-' lines are kept, so any selection gives a consistent file.
 #
-# Usage: stage-lines.sh [-b base] [-f file] [-n] path [id...]
+# Usage: stage-lines.sh [-b base] [-f file | -r rev] [-n] path [id...]
 #   -b base  list against a commit instead of the index (listing only)
 #   -f file  take the new content from file instead of the working tree copy of path
+#   -r rev   take the new content from path as it is in commit rev (absent there: deleted)
 #   -n       print the patch instead of staging it
 #   id       a number, a range such as 3-7, or all; several may be given, also comma-separated
 #
@@ -18,16 +19,18 @@
 set -eu
 
 usage() {
-    sed -n '10,14p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '10,15p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 base=
 from=
+rev=
 dry=
-while getopts 'b:f:nh' opt; do
+while getopts 'b:f:r:nh' opt; do
     case $opt in
         b) base=$OPTARG ;;
         f) from=$OPTARG ;;
+        r) rev=$OPTARG ;;
         n) dry=1 ;;
         h) usage; exit 0 ;;
         *) usage >&2; exit 2 ;;
@@ -42,6 +45,7 @@ case $ids in
     *[!0-9\ a-l-]*) usage >&2; exit 2 ;;
 esac
 [ -z "$base" ] || [ -z "$ids" ] || { echo '-b is for listing only; staging is always against the index' >&2; exit 2; }
+[ -z "$from" ] || [ -z "$rev" ] || { usage >&2; exit 2; }
 
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo 'Not a git work tree' >&2; exit 2; }
 case $from in
@@ -66,9 +70,18 @@ elif git cat-file -e ":$path" 2>/dev/null; then
     old=$tmp/old
 fi
 
-# New side: -f file, or the working tree copy; /dev/null if it was deleted.
+# New side: -f file, -r rev, or the working tree copy; /dev/null if it was deleted.
 new=${from:-$path}
-if [ ! -e "$new" ]; then
+mode=
+if [ -n "$rev" ]; then
+    git rev-parse -q --verify "$rev^{commit}" >/dev/null || { echo "Not a commit: $rev" >&2; exit 2; }
+    new=/dev/null
+    if git cat-file -e "$rev:$path" 2>/dev/null; then
+        git cat-file blob "$rev:$path" >"$tmp/new"
+        new=$tmp/new
+        mode=$(git ls-tree "$rev" -- "$path" | cut -c1-6)
+    fi
+elif [ ! -e "$new" ]; then
     [ -z "$from" ] || { echo "No such file: $from" >&2; exit 2; }
     new=/dev/null
 fi
@@ -136,6 +149,8 @@ elif [ -n "$dry" ]; then
     cat "$tmp/out"
 else
     git apply --cached --recount --whitespace=nowarn "$tmp/out" || exit 3
+    # A file new to the index takes the mode of the temporary copy; give it the commit's.
+    [ "$mode" != 100755 ] || git update-index --chmod=+x -- "$path"
     read -r picked total <"$tmp/err"
     echo "Staged $picked of $total changed lines in $path"
 fi

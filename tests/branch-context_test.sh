@@ -1,0 +1,196 @@
+#!/bin/sh
+# Behaviour of shared/scripts/branch-context.sh. Run with tests/run.sh.
+
+# shellcheck source=tests/helpers.sh
+. "$(dirname "$0")/helpers.sh"
+
+# branch name: create a branch at HEAD and switch to it.
+branch() { git checkout -qb "$1"; }
+
+# commit_file path: add or change path and commit it with the path as the subject.
+commit_file() { lines x >>"$1" && commit_all "$1"; }
+
+# base_line: the line naming the base, without its hash.
+base_line() { sh "$branch_context" "$@" | sed -n '/^## Base$/{n;p;}' | cut -d' ' -f2-; }
+
+# push_to_origin: give the repo a bare origin, push the current branch and track it.
+push_to_origin() {
+    git init -q --bare "$sandbox/origin.git"
+    git remote add origin "$sandbox/origin.git"
+    git push -qu origin HEAD 2>/dev/null
+    git remote set-head origin -a >/dev/null
+}
+
+# --- Finding the base
+
+test_the_base_is_the_nearest_branch() {
+    main=$(git symbolic-ref --short HEAD)
+    branch feature && commit_file g
+    assertEquals "$main (nearest branch)" "$(base_line)"
+    assertContains "$(sh "$branch_context")" '1 commits since the base'
+}
+
+test_a_branch_started_from_another_branch_takes_that_one_as_its_base() {
+    branch develop && commit_file d
+    branch feature && commit_file g
+    assertEquals 'develop (nearest branch)' "$(base_line)"
+}
+
+test_a_given_base_is_used() {
+    main=$(git symbolic-ref --short HEAD)
+    branch develop && commit_file d
+    branch feature && commit_file g
+    assertEquals "$main (given)" "$(base_line "$main")"
+    assertContains "$(sh "$branch_context" "$main")" '2 commits since the base'
+}
+
+test_branches_built_on_this_one_are_not_its_base() {
+    main=$(git symbolic-ref --short HEAD)
+    branch feature && commit_file g
+    branch child && commit_file h
+    git checkout -q feature
+    assertEquals "$main (nearest branch)" "$(base_line)"
+}
+
+test_this_branch_on_a_remote_is_not_its_base() {
+    main=$(git symbolic-ref --short HEAD)
+    push_to_origin
+    branch feature && commit_file g && git push -qu origin feature 2>/dev/null
+    commit_file h
+    assertEquals "$main, origin/$main (nearest branch)" "$(base_line)"
+}
+
+test_on_the_default_branch_only_unpushed_commits_are_reworked() {
+    push_to_origin
+    commit_file g
+    assertContains "$(base_line)" '(upstream of the default branch: unpushed commits only)'
+    assertContains "$(sh "$branch_context")" '1 commits since the base'
+}
+
+test_on_the_default_branch_without_an_upstream_exits_2() {
+    lines x >new
+    assertEquals 2 "$(exit_status sh "$branch_context")"
+}
+
+test_a_new_branch_with_uncommitted_work_has_its_start_as_the_base() {
+    branch feature
+    lines x >new
+    assertContains "$(sh "$branch_context")" '0 commits since the base'
+}
+
+test_a_given_base_that_is_not_a_commit_exits_2() {
+    branch feature && commit_file g
+    assertEquals 2 "$(exit_status sh "$branch_context" nope)"
+}
+
+# --- Exit status
+
+test_nothing_to_rework_exits_1() {
+    branch feature
+    assertEquals 1 "$(exit_status sh "$branch_context")"
+}
+
+test_outside_a_repository_exits_2() {
+    cd "$sandbox" || return
+    assertEquals 2 "$(exit_status sh "$branch_context")"
+}
+
+test_a_repository_without_commits_exits_2() {
+    rm -rf .git && new_repo
+    assertEquals 2 "$(exit_status sh "$branch_context")"
+}
+
+test_a_bad_option_exits_2() {
+    branch feature && commit_file g
+    assertEquals 2 "$(exit_status sh "$branch_context" -n x)"
+}
+
+# --- Warnings
+
+test_no_warnings_prints_none() {
+    branch feature && commit_file g
+    assertContains "$(sh "$branch_context")" '## Warnings
+(none)'
+}
+
+test_warns_of_commits_by_someone_else() {
+    branch feature && commit_file g
+    lines y >>g && git add g && GIT_AUTHOR_EMAIL=other@example.com git commit -qm other
+    assertContains "$(sh "$branch_context")" '(not yours: 1 commits by other@example.com)'
+}
+
+test_warns_of_merge_commits() {
+    branch feature && commit_file g
+    branch side && commit_file h
+    git checkout -q feature && commit_file i
+    git merge -q --no-edit side
+    assertContains "$(sh "$branch_context" side~1)" '(merge commits: 1)'
+}
+
+test_warns_of_pushed_commits() {
+    main=$(git symbolic-ref --short HEAD)
+    push_to_origin
+    branch feature && commit_file g && git push -q origin feature 2>/dev/null
+    commit_file h
+    assertContains "$(sh "$branch_context" "$main")" '(pushed: 1 of 2 commits are on a remote)'
+}
+
+test_warns_of_committed_files_that_are_now_ignored() {
+    branch feature
+    lines secret >.env && git add .env && commit_all env
+    lines .env >.gitignore && commit_all ignore
+    assertContains "$(sh "$branch_context")" '(ignored but committed: .env)'
+}
+
+test_reports_a_rebase_in_progress() {
+    branch feature && commit_file g
+    mkdir .git/rebase-merge
+    assertContains "$(sh "$branch_context")" '(a rebase is in progress)'
+}
+
+# --- Commits and changes
+
+test_shows_style_subjects_from_before_the_base() {
+    branch feature && commit_file g
+    assertContains "$(sh "$branch_context")" '## Recent commits before the base
+init'
+}
+
+test_shows_each_commit_with_its_full_message() {
+    branch feature
+    lines x >g && git add g && git commit -qm 'Add g' -m 'Because of reasons.'
+    out=$(sh "$branch_context")
+    assertContains "$out" 'Add g
+
+Because of reasons.'
+    assertContains "$out" ' g | 1 +'
+}
+
+test_shows_committed_uncommitted_and_untracked_changes_together() {
+    branch feature
+    lines g1 >g && commit_all g
+    lines a B c >f
+    lines x >new
+    out=$(sh "$branch_context")
+    assertContains "$out" '    1 +g1'
+    assertContains "$out" '    2 +B'
+    assertContains "$out" '    1 +x'
+}
+
+test_numbers_match_stage_lines_once_the_index_is_reset_to_the_base() {
+    main=$(git symbolic-ref --short HEAD)
+    branch feature
+    lines a B c >f && commit_all f
+    lines a B c d >f
+    out=$(sh "$branch_context")
+    git reset -q "$main"
+    assertContains "$out" "$(sh "$stage_lines" f)"
+}
+
+test_truncates_the_changes_after_the_line_limit() {
+    branch feature && commit_file g
+    assertContains "$(sh "$branch_context" -n 3 | tail -1)" '[truncated: 3 of'
+}
+
+# shellcheck disable=SC1090
+. "$(shunit2_path)"

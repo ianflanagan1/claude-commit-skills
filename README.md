@@ -1,6 +1,6 @@
 # commit-message
 
-Claude Code skills for commit messages. `/commit-message` suggests a message for whatever is staged when you run it and prints only the message. `/commit-staged` commits what is staged. `/commit` splits all uncommitted work into atomic commits.
+Claude Code skills for commit messages. `/commit-message` suggests a message for whatever is staged when you run it and prints only the message. `/commit-staged` commits what is staged. `/commit` splits all uncommitted work into atomic commits. `/re-commit` and `/re-commit-for-squash` rework a whole branch, committed or not, into atomic commits or into commits ordered for review.
 
 ## Why
 
@@ -42,6 +42,23 @@ Where it can, it checks each commit by running the repo's quick build or test co
 
 It leaves out secrets, build output and scratch files and lists them. Its `allowed-tools` pre-approve the git commands it uses while it runs.
 
+## Reworking a branch
+
+`/re-commit` takes everything on the branch since it started, its commits and any uncommitted work, and rebuilds it as atomic commits the same way `/commit` does. It's for a branch whose history will be kept: each commit builds and works, so it can be reverted, cherry-picked or bisected. If the commits already fit and nothing is uncommitted, it says so and changes nothing.
+
+`/re-commit-for-squash` does the same for a branch that will be squash-merged, where the commits are lost on merge and only serve the review. Each mechanical change (a rename with every use of it, a namespace move, a lint-rule pass) gets a commit of its own, ahead of the behaviour changes, so a reviewer can skim it. Commits don't have to build on their own. It also prints a suggested message for the squash merge.
+
+```
+/re-commit
+/re-commit-for-squash
+```
+
+The branch's base is the merge-base with the branch or commit you name after the skill (`/re-commit develop`). Without one, `shared/scripts/branch-context.sh` finds it:
+- On the default branch, it's the upstream, so only unpushed commits are reworked.
+- Elsewhere, it's the nearest other branch, local or remote-tracking: the one that leaves the fewest commits on this branch. That's usually the branch it was started from, such as `develop`. If two branches are equally near but disagree, it asks for the base.
+
+Both skills refuse a branch with merge commits or with commits by someone else, which also catches a base that is too far back. They reset the branch to the base without touching the working tree, then build each commit in the index as `/commit` does, taking intermediate versions of a file from the original commits with `stage-lines.sh -r <commit>`. They never push. If commits were already pushed, the output says that publishing needs `git push --force-with-lease`. `git reset <start>` undoes a run, leaving any uncommitted work unstaged.
+
 ## Tests
 
 The scripts are tested with [shunit2](https://github.com/kward/shunit2), one `tests/<script>_test.sh` per script, each test named for the behaviour it asserts. With [devbox](https://www.jetify.com/devbox), nothing else is needed:
@@ -64,7 +81,8 @@ Each skill follows one approach to deciding what goes in a commit:
 | Approach | Skills | Rule |
 |---|---|---|
 | Agnostic | `commit-message`, `commit-staged` | The user chose what goes in the commit; only the message is written. |
-| Atomic | `commit` | Every commit holds one reason to change and leaves the project building and working, so it can be reverted, cherry-picked or bisected on its own. |
+| Atomic | `commit`, `re-commit` | Every commit holds one reason to change and leaves the project building and working, so it can be reverted, cherry-picked or bisected on its own. |
+| Review-ordered | `re-commit-for-squash` | The branch will be squash-merged, so commits are grouped for easy review: mechanical changes alone and first, only related work together. They don't have to build. |
 
 ## Shared files
 
@@ -72,8 +90,11 @@ Rules and scripts the skills share live once in `shared/`, and each skill links 
 
 - `commit-message-guide.md`: how messages are written (every skill)
 - `commit-safety.md`: how to run `git commit`, and never skipping hooks (every skill that commits)
-- `staging.md`: building commits in the index without touching the working tree, and handling hook rejections (`commit`)
-- `atomic-commits.md`: the atomic approach: grouping, ordering and checking each commit (`commit`)
+- `staging.md`: building commits in the index without touching the working tree, and handling hook rejections (`commit`, both `re-commit` skills)
+- `rework.md`: resetting a branch to its base to rebuild it (both `re-commit` skills)
+- `atomic-commits.md`: the atomic approach: grouping, ordering and checking each commit (`commit`, `re-commit`)
+
+The review-ordered approach is written into `re-commit-for-squash/SKILL.md` itself, since nothing else uses it.
 
 The links make a skill's approach visible in its folder, and `tests/skills_test.sh` fails if a skill inlines the files of the wrong approach. When vendoring a skill, copy it with `cp -RL` so the links become real files.
 
@@ -97,7 +118,7 @@ Install it as a plugin:
 /plugin install commit-message@commit-message
 ```
 
-Plugin skills are namespaced, so they're invoked as `/commit-message:commit-message`, `/commit-message:commit-staged` and `/commit-message:commit`.
+Plugin skills are namespaced, so they're invoked as `/commit-message:commit-message`, `/commit-message:commit-staged`, `/commit-message:commit`, `/commit-message:re-commit` and `/commit-message:re-commit-for-squash`.
 
 You can vendor them instead, so collaborators get them with the repo: `cp -RL skills/<name> .claude/skills/` in your project, and each is invoked as `/<name>`. Don't install them both ways at once, or Claude will see each skill twice.
 
