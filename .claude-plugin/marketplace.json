@@ -1,0 +1,14 @@
+{
+  "name": "commit-message",
+  "description": "Commit-message skills for Claude Code: suggest a message for staged changes, commit them, or split all uncommitted work into atomic commits, matching the repository's style.",
+  "owner": {
+    "name": "Ian Flanagan"
+  },
+  "plugins": [
+    {
+      "name": "commit-message",
+      "source": "./",
+      "description": "Commit-message skills for Claude Code: suggest a message for staged changes, commit them, or split all uncommitted work into atomic commits, matching the repository's style."
+    }
+  ]
+}

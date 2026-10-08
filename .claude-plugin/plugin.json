@@ -1,0 +1,11 @@
+{
+  "name": "commit-message",
+  "description": "Commit-message skills for Claude Code: suggest a message for staged changes, commit them, or split all uncommitted work into atomic commits, matching the repository's style.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ian Flanagan"
+  },
+  "homepage": "https://github.com/ianflanagan1/commit-message",
+  "repository": "https://github.com/ianflanagan1/commit-message",
+  "license": "MIT"
+}

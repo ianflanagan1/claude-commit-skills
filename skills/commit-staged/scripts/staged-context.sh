@@ -1,0 +1,1 @@
+../../commit-message/scripts/staged-context.sh
