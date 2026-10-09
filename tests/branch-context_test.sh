@@ -26,14 +26,14 @@ push_to_origin() {
 test_the_base_is_the_nearest_branch() {
     main=$(git symbolic-ref --short HEAD)
     branch feature && commit_file g
-    assertEquals "$main (nearest branch)" "$(base_line)"
+    assertEquals "$main (guessed: nearest branch)" "$(base_line)"
     assertContains "$(sh "$branch_context")" '1 commits since the base'
 }
 
 test_a_branch_started_from_another_branch_takes_that_one_as_its_base() {
     branch develop && commit_file d
     branch feature && commit_file g
-    assertEquals 'develop (nearest branch)' "$(base_line)"
+    assertEquals 'develop (guessed: nearest branch)' "$(base_line)"
 }
 
 test_a_given_base_is_used() {
@@ -49,7 +49,7 @@ test_branches_built_on_this_one_are_not_its_base() {
     branch feature && commit_file g
     branch child && commit_file h
     git checkout -q feature
-    assertEquals "$main (nearest branch)" "$(base_line)"
+    assertEquals "$main (guessed: nearest branch)" "$(base_line)"
 }
 
 test_this_branch_on_a_remote_is_not_its_base() {
@@ -57,18 +57,49 @@ test_this_branch_on_a_remote_is_not_its_base() {
     push_to_origin
     branch feature && commit_file g && git push -qu origin feature 2>/dev/null
     commit_file h
-    assertEquals "$main, origin/$main (nearest branch)" "$(base_line)"
+    assertEquals "$main, origin/$main (guessed: nearest branch)" "$(base_line)"
 }
 
 test_on_the_default_branch_only_unpushed_commits_are_reworked() {
     push_to_origin
     commit_file g
-    assertContains "$(base_line)" '(upstream of the default branch: unpushed commits only)'
+    assertContains "$(base_line)" "(upstream of $(git symbolic-ref --short HEAD): unpushed commits only)"
     assertContains "$(sh "$branch_context")" '1 commits since the base'
 }
 
 test_on_the_default_branch_without_an_upstream_exits_2() {
     lines x >new
+    assertEquals 2 "$(exit_status sh "$branch_context")"
+}
+
+test_a_configured_base_is_used_in_place_of_the_nearest_branch() {
+    main=$(git symbolic-ref --short HEAD)
+    branch develop && commit_file d
+    branch feature && commit_file g
+    git config commit-message.base "$main"
+    assertEquals "$main (from git config commit-message.base)" "$(base_line)"
+    assertContains "$(sh "$branch_context")" '2 commits since the base'
+}
+
+test_a_given_base_overrides_the_configured_one() {
+    main=$(git symbolic-ref --short HEAD)
+    branch develop && commit_file d
+    branch feature && commit_file g
+    git config commit-message.base "$main"
+    assertEquals 'develop (given)' "$(base_line develop)"
+}
+
+test_on_the_configured_base_branch_only_unpushed_commits_are_reworked() {
+    push_to_origin
+    branch develop && git push -qu origin develop 2>/dev/null
+    git config commit-message.base origin/develop
+    commit_file d
+    assertEquals 'origin/develop (upstream of develop: unpushed commits only)' "$(base_line)"
+}
+
+test_a_configured_base_that_is_not_a_commit_exits_2() {
+    branch feature && commit_file g
+    git config commit-message.base nope
     assertEquals 2 "$(exit_status sh "$branch_context")"
 }
 

@@ -2,8 +2,8 @@
 
 The branch's commits since the base, and any uncommitted work, are rebuilt into a new series on top of the base. Nothing before the base changes.
 
-- Merge commits on the branch: reply `🚫 Not reworking: the branch has merge commits.` and stop.
-- Commits by someone else: reply `🚫 Not reworking: the branch has commits by <emails>.` and stop. If the base looks wrong, because the branch seems to include commits that aren't its own, add that the user can pass the base after the skill's name.
+- Merge commits on the branch: reply `🚫 Not reworking: the branch has merge commits; rebase it onto its base first.` and stop.
+- Commits by someone else: reply `🚫 Not reworking: the branch has commits by <emails>.` and stop. If the base looks wrong, because the branch seems to include commits that aren't its own, add that the user can pass the base after the skill's name, or set one for the repo with `git config commit-message.base <branch>`.
 - Read every commit's message and, with `git show <hash>`, its diff. The messages hold reasons, tickets and trailers that the final diff doesn't show.
 - If the commits already fit the approach and there is no uncommitted work, reply `➖ Already well organised.` and stop. Make no changes.
 - Plan the whole new series before changing anything. Uncommitted work can join the commit it belongs with (a fix to it, say) or become commits of its own.

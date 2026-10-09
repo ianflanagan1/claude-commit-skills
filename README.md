@@ -53,11 +53,20 @@ It leaves out secrets, build output and scratch files and lists them. Its `allow
 /re-commit-for-squash
 ```
 
-The branch's base is the merge-base with the branch or commit you name after the skill (`/re-commit develop`). Without one, `shared/scripts/branch-context.sh` finds it:
-- On the default branch, it's the upstream, so only unpushed commits are reworked.
-- Elsewhere, it's the nearest other branch, local or remote-tracking: the one that leaves the fewest commits on this branch. That's usually the branch it was started from, such as `develop`. If two branches are equally near but disagree, it asks for the base.
+The branch's base is where its work started. `shared/scripts/branch-context.sh` takes the first of:
+1. The branch or commit you name after the skill (`/re-commit develop`).
+2. On the default branch, or on the branch the setting below names, its upstream, so only unpushed commits are reworked.
+3. The setting `commit-message.base`, for a repo where every feature branch starts from the same branch:
 
-Both skills refuse a branch with merge commits or with commits by someone else, which also catches a base that is too far back. They reset the branch to the base without touching the working tree, then build each commit in the index as `/commit` does, taking intermediate versions of a file from the original commits with `stage-lines.sh -r <commit>`. They never push. If commits were already pushed, the output says that publishing needs `git push --force-with-lease`. `git reset <start>` undoes a run, leaving any uncommitted work unstaged.
+   ```sh
+   git config commit-message.base origin/develop
+   ```
+
+4. A guess: the nearest other branch, local or remote-tracking, meaning the one that leaves the fewest commits on this branch. That's usually the branch it was started from. If two branches are equally near but disagree, it asks for the base.
+
+The output names the base and how it was found, with `guessed` for the last.
+
+Both skills refuse a branch with merge commits (rebase it onto its base first) or with commits by someone else, which also catches a base that is too far back. They reset the branch to the base without touching the working tree, then build each commit in the index as `/commit` does, taking intermediate versions of a file from the original commits with `stage-lines.sh -r <commit>`. They never push. If commits were already pushed, the output says that publishing needs `git push --force-with-lease`. `git reset <start>` undoes a run, leaving any uncommitted work unstaged.
 
 ## Tests
 

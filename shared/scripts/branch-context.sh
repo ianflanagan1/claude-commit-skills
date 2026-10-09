@@ -2,8 +2,9 @@
 # branch-context: print what is needed to rework a branch's commits and uncommitted work.
 #
 # The base is where the work started: the merge-base with the given branch or commit; else, on
-# the default branch, with its upstream, so only unpushed commits are reworked; else with the
-# nearest other branch, local or remote-tracking, leaving the fewest commits since the base.
+# the default branch or the configured base's own branch, with its upstream, so only unpushed
+# commits are reworked; else with the branch set in git config commit-message.base; else with
+# the nearest other branch, local or remote-tracking, leaving the fewest commits since the base.
 #
 # Usage: branch-context.sh [-n lines] [base]
 #   -n lines  maximum diff lines to print (default: 3000)
@@ -25,7 +26,7 @@
 set -eu
 
 usage() {
-    sed -n '8,10p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '9,11p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 max=3000
@@ -58,15 +59,25 @@ if [ -z "$default" ]; then
     done
 fi
 
+# The configured base, and the branch it names, without its remote.
+configured=$(git config commit-message.base || true)
+own=$configured
+! git show-ref -q --verify "refs/remotes/$configured" || own=${configured#*/}
+
 if [ $# -eq 1 ]; then
     git rev-parse -q --verify "$1^{commit}" >/dev/null || { echo "Not a commit: $1" >&2; exit 2; }
     base=$(git merge-base HEAD "$1") || { echo "No history in common with $1" >&2; exit 2; }
     how="$1 (given)"
-elif [ -n "$cur" ] && [ "$cur" = "$default" ]; then
+elif [ -n "$cur" ] && { [ "$cur" = "$default" ] || [ "$cur" = "$own" ]; }; then
     upstream=$(git rev-parse -q --abbrev-ref '@{upstream}' 2>/dev/null) ||
         { echo "On $cur with no upstream; pass the base to rework from" >&2; exit 2; }
     base=$(git merge-base HEAD "$upstream")
-    how="$upstream (upstream of the default branch: unpushed commits only)"
+    how="$upstream (upstream of $cur: unpushed commits only)"
+elif [ -n "$configured" ]; then
+    git rev-parse -q --verify "$configured^{commit}" >/dev/null ||
+        { echo "commit-message.base is $configured, which is not a commit" >&2; exit 2; }
+    base=$(git merge-base HEAD "$configured") || { echo "No history in common with $configured" >&2; exit 2; }
+    how="$configured (from git config commit-message.base)"
 else
     # Candidates as "commits since the merge-base, merge-base, name". Skip this branch, its
     # remote copies and branches built on top of it.
@@ -87,7 +98,7 @@ else
         echo 'Pass the base to rework from' >&2
         exit 2
     fi
-    how="$(cut -d' ' -f3 "$tmp/near" | tr '\n' ',' | sed 's/,$//; s/,/, /g') (nearest branch)"
+    how="$(cut -d' ' -f3 "$tmp/near" | tr '\n' ',' | sed 's/,$//; s/,/, /g') (guessed: nearest branch)"
 fi
 
 dirty=$(git status --porcelain --untracked-files=all)
