@@ -1,6 +1,6 @@
 # commit-message
 
-Claude Code skills for commit messages. `/commit-message` suggests a message for whatever is staged when you run it and prints only the message. `/commit-staged` commits what is staged. `/commit` splits all uncommitted work into atomic commits. `/re-commit` and `/re-commit-for-squash` rework a whole branch, committed or not, into atomic commits or into commits ordered for review.
+Claude Code skills for commit messages. `/commit-message` suggests a message for whatever is staged when you run it and prints only the message. `/commit-staged` commits what is staged. `/commit` splits all uncommitted work into atomic commits, and `/push` does the same and pushes. `/re-commit` and `/re-commit-for-squash` rework a whole branch, committed or not, into atomic commits or into commits ordered for review.
 
 ## Why
 
@@ -41,6 +41,14 @@ It builds every commit in the index and never touches the working tree, using tw
 Where it can, it checks each commit by running the repo's quick build or test command in a throwaway `git worktree`.
 
 It leaves out secrets, build output and scratch files and lists them. Its `allowed-tools` pre-approve the git commands it uses while it runs.
+
+## Committing and pushing
+
+`/push` does exactly what `/commit` does, then pushes the branch once, and only if every commit was made. With no upstream it sets one with `git push -u`, when the repo has exactly one remote. It never forces, pulls or rebases, and doesn't push a detached `HEAD`. It prints `✅ Pushed.` and where the commits went. If the push is rejected it prints `❌ Push failed.` and git's error, and the commits stay. Only `/push` pre-approves `git push`. `/commit` never pushes.
+
+```
+/push
+```
 
 ## Reworking a branch
 

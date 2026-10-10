@@ -3,7 +3,7 @@
 #
 # The shared references a skill inlines fix its approach to splitting work into commits:
 #   agnostic        the user chose what goes in the commit   commit-message, commit-staged
-#   atomic          atomic-commits.md                        commit, re-commit
+#   atomic          atomic-commits.md                        commit, push, re-commit
 #   review-ordered  its own Approach section                 re-commit-for-squash
 
 # shellcheck source=tests/helpers.sh
@@ -14,6 +14,16 @@ inlined() {
     # shellcheck disable=SC2016
     sed -n 's,^!`cat "${CLAUDE_SKILL_DIR}/references/\([^"]*\)"`$,\1,p' "$root/skills/$1/SKILL.md" |
         sort | tr '\n' ' ' | sed 's/ $//'
+}
+
+# procedure skill: the skill's SKILL.md from its first section up to its Output section, without
+# a Push section: what it does to make its commits.
+procedure() {
+    awk '
+        /^## Output/ { exit }
+        /^## / { started = 1; skip = /^## Push/ }
+        started && !skip
+    ' "$root/skills/$1/SKILL.md"
 }
 
 # skills_inlining file: the skills whose SKILL.md inlines the reference, space-separated.
@@ -30,9 +40,23 @@ test_agnostic_skills_inline_no_approach() {
 }
 
 test_atomic_skills_inline_the_atomic_commit_rules() {
-    assertEquals 'commit re-commit' "$(skills_inlining atomic-commits.md)"
+    assertEquals 'commit push re-commit' "$(skills_inlining atomic-commits.md)"
     assertEquals 'atomic-commits.md commit-message-guide.md commit-safety.md staging.md' "$(inlined commit)"
+    assertEquals "$(inlined commit)" "$(inlined push)"
     assertEquals 'atomic-commits.md commit-message-guide.md commit-safety.md rework.md staging.md' "$(inlined re-commit)"
+}
+
+test_push_commits_exactly_as_commit_does() {
+    assertEquals "$(procedure commit)" "$(procedure push)"
+}
+
+test_push_has_a_push_section_and_commit_does_not() {
+    assertContains "$(cat "$root/skills/push/SKILL.md")" '## Push'
+    assertNotContains "$(cat "$root/skills/commit/SKILL.md")" '## Push'
+}
+
+test_only_push_is_allowed_to_run_git_push() {
+    assertEquals "$root/skills/push/SKILL.md" "$(grep -l '^allowed-tools:.*git push' "$root"/skills/*/SKILL.md)"
 }
 
 test_the_review_ordered_skill_states_its_own_approach() {

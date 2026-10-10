@@ -1,6 +1,6 @@
 {
   "name": "commit-message",
-  "description": "Commit-message skills for Claude Code: suggest a message for staged changes, commit them, split all uncommitted work into atomic commits, or rework a branch into atomic or review-ordered commits, matching the repository's style.",
+  "description": "Commit-message skills for Claude Code: suggest a message for staged changes, commit them, split all uncommitted work into atomic commits and optionally push them, or rework a branch into atomic or review-ordered commits, matching the repository's style.",
   "owner": {
     "name": "Ian Flanagan"
   },
@@ -8,7 +8,7 @@
     {
       "name": "commit-message",
       "source": "./",
-      "description": "Commit-message skills for Claude Code: suggest a message for staged changes, commit them, split all uncommitted work into atomic commits, or rework a branch into atomic or review-ordered commits, matching the repository's style."
+      "description": "Commit-message skills for Claude Code: suggest a message for staged changes, commit them, split all uncommitted work into atomic commits and optionally push them, or rework a branch into atomic or review-ordered commits, matching the repository's style."
     }
   ]
 }
