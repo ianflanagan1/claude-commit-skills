@@ -131,7 +131,7 @@ Lockfiles and minified files are listed with their change counts but left out of
 Install it as a plugin:
 
 ```
-/plugin marketplace add ianflanagan1/commit-message
+/plugin marketplace add ianflanagan1/commit-skills
 /plugin install commit-message@commit-message
 ```
 
