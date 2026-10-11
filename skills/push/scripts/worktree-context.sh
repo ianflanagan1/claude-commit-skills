@@ -1,1 +1,0 @@
-../../../shared/scripts/worktree-context.sh

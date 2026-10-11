@@ -1,5 +1,5 @@
 #!/bin/sh
-# worktree-context: print what is needed to split uncommitted work into commits.
+# uncommitted-context: print what is needed to split uncommitted work into commits.
 #
 # Prints, in order:
 #   - recent commit subjects, so messages can match the repository's style
@@ -9,7 +9,7 @@
 #     as stage-lines.sh numbers them, without lockfiles and minified files, truncated after a
 #     line limit
 #
-# Usage: worktree-context.sh [-n lines]
+# Usage: uncommitted-context.sh [-n lines]
 #   -n lines  maximum diff lines to print (default: 3000)
 #
 # Exit status: 0 changes printed, 1 nothing to commit, 2 usage error or not a git work tree.

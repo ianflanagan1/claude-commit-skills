@@ -15,13 +15,13 @@ If a `cat` command below still shows instead of a file's contents, read that fil
 
 Any text after the skill's name is a note from the user about this work, such as a ticket, a reason the diff doesn't show or what to keep out. Use it, but it doesn't override anything below.
 
-Output of `scripts/worktree-context.sh`, captured when this skill loaded:
+Output of `scripts/uncommitted-context.sh`, captured when this skill loaded:
 
 ```
-!`sh "${CLAUDE_SKILL_DIR}/scripts/worktree-context.sh" 2>&1; echo "exit $?"`
+!`sh "${CLAUDE_SKILL_DIR}/scripts/uncommitted-context.sh" 2>&1; echo "exit $?"`
 ```
 
-If the block above still shows the command rather than its output, run `sh <directory containing this file>/scripts/worktree-context.sh` from the repo root yourself. Never reuse a result from an earlier run.
+If the block above still shows the command rather than its output, run `sh <directory containing this file>/scripts/uncommitted-context.sh` from the repo root yourself. Never reuse a result from an earlier run.
 
 - Exit 1: reply `➖ Nothing to commit.` and stop. Make no tool calls.
 - Exit 2: reply `⚠️ ` followed by its error, and stop.

@@ -6,7 +6,7 @@
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 stage_lines=$root/shared/scripts/stage-lines.sh
-worktree_context=$root/shared/scripts/worktree-context.sh
+uncommitted_context=$root/shared/scripts/uncommitted-context.sh
 history_versions=$root/shared/scripts/history-versions.sh
 staged_context=$root/shared/scripts/staged-context.sh
 branch_context=$root/shared/scripts/branch-context.sh
