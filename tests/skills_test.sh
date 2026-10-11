@@ -34,6 +34,39 @@ skills_inlining() {
     done | sed 's/ $//'
 }
 
+# loading_commands skill: the commands the skill's SKILL.md runs as it loads, other than cat (which
+# needs no rule), one per line, split at "; ", without "2>&1" and with CLAUDE_SKILL_DIR filled in.
+loading_commands() {
+    # shellcheck disable=SC2016
+    sed -n 's/^!`\(.*\)`$/\1/p' "$root/skills/$1/SKILL.md" |
+        grep -v '^cat ' |
+        sed -e "s,\${CLAUDE_SKILL_DIR},/home/u/.claude/skills/$1,g" -e 's/ 2>&1//g' -e 's/; /\
+/g'
+}
+
+# allows skill command: whether a Bash rule in the skill's allowed-tools matches the command, as
+# Claude Code matches it: "*" matches anything, quotes included, and a legacy "prefix:*" matches
+# the prefix alone or followed by a space.
+allows() {
+    command=$2
+    rules=$(sed -n 's/^allowed-tools: //p' "$root/skills/$1/SKILL.md" | sed 's/, /\
+/g' | sed -n 's/^Bash(\(.*\))$/\1/p')
+    while IFS= read -r rule; do
+        [ -n "$rule" ] || continue
+        case $rule in
+            *:\*) prefix=${rule%:\*}; set -- "$prefix" "$prefix *" ;;
+            *) set -- "$rule" ;;
+        esac
+        for glob; do
+            # shellcheck disable=SC2254  # the rule is the pattern
+            case $command in $glob) return 0 ;; esac
+        done
+    done <<EOF
+$rules
+EOF
+    return 1
+}
+
 test_agnostic_skills_inline_no_approach() {
     assertEquals 'commit-message-guide.md' "$(inlined commit-message)"
     assertEquals 'commit-message-guide.md commit-safety.md' "$(inlined commit-staged)"
@@ -77,6 +110,18 @@ test_every_inlined_reference_and_script_exists_in_the_skill() {
             assertTrue "$(basename "$skill")/$f" "[ -f '$skill/$f' ]"
         done <<EOF
 $(sed -n 's,.*CLAUDE_SKILL_DIR}/\([a-z]*/[a-z.-]*\).*,\1,p' "$skill/SKILL.md")
+EOF
+    done
+}
+
+test_every_command_a_skill_runs_as_it_loads_is_in_its_allowed_tools() {
+    for skill in "$root"/skills/*/; do
+        skill=$(basename "$skill")
+        while IFS= read -r command; do
+            [ -n "$command" ] || continue
+            allows "$skill" "$command" || fail "$skill does not allow: $command"
+        done <<EOF
+$(loading_commands "$skill")
 EOF
     done
 }
