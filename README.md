@@ -89,7 +89,7 @@ Without devbox, install shunit2 (`brew install shunit2`, `apt install shunit2`) 
 
 ## Problems
 
-These skills don't report their own problems. If you use [`/improve-skill`](https://github.com/ianflanagan1/improve-skill), a rule in your global `CLAUDE.md` has Claude log problems with any skill, these included, for it to fix.
+These skills don't report their own problems. If you use [`/improve-skill`](https://github.com/ianflanagan1/claude-improve-skill), a rule in your global `CLAUDE.md` has Claude log problems with any skill, these included, for it to fix.
 
 ## Approaches
 
@@ -131,7 +131,7 @@ Lockfiles and minified files are listed with their change counts but left out of
 Install it as a plugin:
 
 ```
-/plugin marketplace add ianflanagan1/commit-skills
+/plugin marketplace add ianflanagan1/claude-commit-skills
 /plugin install commit-message@commit-message
 ```
 
