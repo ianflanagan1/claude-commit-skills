@@ -98,7 +98,7 @@ Each skill follows one approach to deciding what goes in a commit:
 | Approach | Skills | Rule |
 |---|---|---|
 | Agnostic | `commit-message`, `commit-staged` | The user chose what goes in the commit; only the message is written. |
-| Atomic | `commit`, `re-commit` | Every commit holds one reason to change and leaves the project building and working, so it can be reverted, cherry-picked or bisected on its own. |
+| Atomic | `commit`, `push`, `re-commit` | Every commit holds one reason to change and leaves the project building and working, so it can be reverted, cherry-picked or bisected on its own. |
 | Review-ordered | `re-commit-for-squash` | The branch will be squash-merged, so commits are grouped for easy review: mechanical changes alone and first, only related work together. They don't have to build. |
 
 ## Shared files
@@ -107,24 +107,25 @@ Rules and scripts the skills share live once in `shared/`, and each skill links 
 
 - `commit-message-guide.md`: how messages are written (every skill)
 - `commit-safety.md`: how to run `git commit`, and never skipping hooks (every skill that commits)
-- `staging.md`: building commits in the index without touching the working tree, and handling hook rejections (`commit`, both `re-commit` skills)
+- `staging.md`: building commits in the index without touching the working tree, and handling hook rejections (`commit`, `push`, both `re-commit` skills)
 - `rework.md`: resetting a branch to its base to rebuild it (both `re-commit` skills)
-- `atomic-commits.md`: the atomic approach: grouping, ordering and checking each commit (`commit`, `re-commit`)
+- `atomic-commits.md`: the atomic approach: grouping, ordering and checking each commit (`commit`, `push`, `re-commit`)
 
 The review-ordered approach is written into `re-commit-for-squash/SKILL.md` itself, since nothing else uses it.
 
 The links make a skill's approach visible in its folder, and `tests/skills_test.sh` fails if a skill inlines the files of the wrong approach. When vendoring a skill, copy it with `cp -RL` so the links become real files.
 
-## Script
+## Scripts
 
-`staged-context.sh` is POSIX `sh` and works without an agent.
+The scripts in `shared/scripts/` are POSIX `sh` and work without an agent. Each prints its usage with `-h`. The three context scripts each gather what one kind of skill needs:
 
 ```sh
-sh shared/scripts/staged-context.sh          # print context for the staged changes
-sh shared/scripts/staged-context.sh -n 500   # truncate the diff after 500 lines (default 2000)
+sh shared/scripts/staged-context.sh            # the staged changes (commit-message, commit-staged)
+sh shared/scripts/uncommitted-context.sh       # all uncommitted work, lines numbered (commit, push)
+sh shared/scripts/branch-context.sh [base]     # the branch since its base, lines numbered (both re-commit skills)
 ```
 
-Lockfiles and minified files are listed with their change counts but left out of the diff. It exits with 0 when it prints staged changes, 1 when nothing is staged, and 2 on a usage error or outside a git work tree.
+Each takes `-n <lines>` to truncate the diff after that many lines (default 2000 for `staged-context.sh`, 3000 for the others). Lockfiles and minified files are listed but left out of the diff. They exit with 0 when they print changes, 1 when there is nothing to commit or rework, and 2 on a usage error or outside a git work tree (`branch-context.sh` also when it finds no base).
 
 ## Claude Code
 
