@@ -76,8 +76,8 @@ test_a_configured_base_is_used_in_place_of_the_nearest_branch() {
     main=$(git symbolic-ref --short HEAD)
     branch develop && commit_file d
     branch feature && commit_file g
-    git config commit-message.base "$main"
-    assertEquals "$main (from git config commit-message.base)" "$(base_line)"
+    git config commit-skills.base "$main"
+    assertEquals "$main (from git config commit-skills.base)" "$(base_line)"
     assertContains "$(sh "$branch_context")" '2 commits since the base'
 }
 
@@ -85,21 +85,21 @@ test_a_given_base_overrides_the_configured_one() {
     main=$(git symbolic-ref --short HEAD)
     branch develop && commit_file d
     branch feature && commit_file g
-    git config commit-message.base "$main"
+    git config commit-skills.base "$main"
     assertEquals 'develop (given)' "$(base_line develop)"
 }
 
 test_on_the_configured_base_branch_only_unpushed_commits_are_reworked() {
     push_to_origin
     branch develop && git push -qu origin develop 2>/dev/null
-    git config commit-message.base origin/develop
+    git config commit-skills.base origin/develop
     commit_file d
     assertEquals 'origin/develop (upstream of develop: unpushed commits only)' "$(base_line)"
 }
 
 test_a_configured_base_that_is_not_a_commit_exits_2() {
     branch feature && commit_file g
-    git config commit-message.base nope
+    git config commit-skills.base nope
     assertEquals 2 "$(exit_status sh "$branch_context")"
 }
 

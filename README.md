@@ -1,4 +1,4 @@
-# commit-message
+# commit-skills
 
 Claude Code skills for commit messages. `/commit-message` suggests a message for whatever is staged when you run it and prints only the message. `/commit-staged` commits what is staged. `/commit` splits all uncommitted work into atomic commits, and `/push` does the same and pushes. `/re-commit` and `/re-commit-for-squash` rework a whole branch, committed or not, into atomic commits or into commits ordered for review.
 
@@ -64,10 +64,10 @@ It leaves out secrets, build output and scratch files and lists them. Its `allow
 The branch's base is where its work started. `shared/scripts/branch-context.sh` takes the first of:
 1. The branch or commit you name after the skill (`/re-commit develop`).
 2. On the default branch, or on the branch the setting below names, its upstream, so only unpushed commits are reworked.
-3. The setting `commit-message.base`, for a repo where every feature branch starts from the same branch:
+3. The setting `commit-skills.base`, for a repo where every feature branch starts from the same branch:
 
    ```sh
-   git config commit-message.base origin/develop
+   git config commit-skills.base origin/develop
    ```
 
 4. A guess: the nearest other branch, local or remote-tracking, meaning the one that leaves the fewest commits on this branch. That's usually the branch it was started from. If two branches are equally near but disagree, it asks for the base.
@@ -133,10 +133,10 @@ Install it as a plugin:
 
 ```
 /plugin marketplace add ianflanagan1/claude-commit-skills
-/plugin install commit-message@commit-message
+/plugin install commit-skills@commit-skills
 ```
 
-Plugin skills are namespaced, so they're invoked as `/commit-message:commit-message`, `/commit-message:commit-staged`, `/commit-message:commit`, `/commit-message:re-commit` and `/commit-message:re-commit-for-squash`.
+Plugin skills are namespaced, so they're invoked as `/commit-skills:commit-message`, `/commit-skills:commit-staged`, `/commit-skills:commit`, `/commit-skills:push`, `/commit-skills:re-commit` and `/commit-skills:re-commit-for-squash`.
 
 You can vendor them instead, so collaborators get them with the repo: `cp -RL skills/<name> .claude/skills/` in your project, and each is invoked as `/<name>`. Don't install them both ways at once, or Claude will see each skill twice.
 

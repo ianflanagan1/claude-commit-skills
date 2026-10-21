@@ -3,7 +3,7 @@
 #
 # The base is where the work started: the merge-base with the given branch or commit; else, on
 # the default branch or the configured base's own branch, with its upstream, so only unpushed
-# commits are reworked; else with the branch set in git config commit-message.base; else with
+# commits are reworked; else with the branch set in git config commit-skills.base; else with
 # the nearest other branch, local or remote-tracking, leaving the fewest commits since the base.
 #
 # Usage: branch-context.sh [-n lines] [base]
@@ -60,7 +60,7 @@ if [ -z "$default" ]; then
 fi
 
 # The configured base, and the branch it names, without its remote.
-configured=$(git config commit-message.base || true)
+configured=$(git config commit-skills.base || true)
 own=$configured
 ! git show-ref -q --verify "refs/remotes/$configured" || own=${configured#*/}
 
@@ -75,9 +75,9 @@ elif [ -n "$cur" ] && { [ "$cur" = "$default" ] || [ "$cur" = "$own" ]; }; then
     how="$upstream (upstream of $cur: unpushed commits only)"
 elif [ -n "$configured" ]; then
     git rev-parse -q --verify "$configured^{commit}" >/dev/null ||
-        { echo "commit-message.base is $configured, which is not a commit" >&2; exit 2; }
+        { echo "commit-skills.base is $configured, which is not a commit" >&2; exit 2; }
     base=$(git merge-base HEAD "$configured") || { echo "No history in common with $configured" >&2; exit 2; }
-    how="$configured (from git config commit-message.base)"
+    how="$configured (from git config commit-skills.base)"
 else
     # Candidates as "commits since the merge-base, merge-base, name". Skip this branch, its
     # remote copies and branches built on top of it.
